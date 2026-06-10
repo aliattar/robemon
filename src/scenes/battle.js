@@ -255,7 +255,7 @@ export class BattleScene {
     const steps = [];
     if (!forced) steps.push({ t: 'msg', text: `${name(this.ally)}, fall back!` });
     steps.push(
-      { t: 'fn', fn: () => { this.allyIdx = idx; this.allyHpShow = this.ally.hp; this.allyExpShow = this.expFrac(); } },
+      { t: 'fn', fn: () => { this.allyIdx = idx; this.allyHpShow = this.ally.hp; this.allyExpShow = this.expFrac(); this.anim.allyDrop = 0; } },
       { t: 'msg', text: `Go! ${name(G.party[idx])}!` },
     );
     this.q(...steps);

@@ -1,4 +1,5 @@
 import { input } from './input.js';
+import { G } from './state.js';
 import { music } from './music.js';
 import { initTouch } from './touch.js';
 import { stack, scenes } from './scene.js';
@@ -14,7 +15,8 @@ ctx.imageSmoothingEnabled = false;
 const host = document.getElementById('game');
 
 function fit() {
-  const scale = Math.max(1, Math.floor(Math.min(host.clientWidth / 240, host.clientHeight / 160)));
+  const raw = Math.min(host.clientWidth / 240, host.clientHeight / 160);
+  const scale = raw >= 2 ? Math.floor(raw) : raw;
   canvas.style.width = `${240 * scale}px`;
   canvas.style.height = `${160 * scale}px`;
 }
@@ -28,6 +30,7 @@ let last = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   if (now - last < 1000 / 62) return;
+  G.playTime += Math.min(now - last, 1000);
   last = now;
   const top = scenes.top();
   if (top) top.update();

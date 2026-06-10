@@ -9,6 +9,7 @@ export const G = {
   box: [],
   seen: new Set(),
   caught: new Set(),
+  playTime: 0,
   flags: {},
   healSpot: { map: 'lab', x: 6, y: 4 },
 };
@@ -70,7 +71,7 @@ export function save() {
   const data = {
     map: G.map, x: G.x, y: G.y, dir: G.dir,
     party: G.party, box: G.box, starter: G.starter,
-    seen: [...G.seen], caught: [...G.caught],
+    seen: [...G.seen], caught: [...G.caught], playTime: G.playTime,
     flags: G.flags, healSpot: G.healSpot,
   };
   localStorage.setItem(SAVE_KEY, JSON.stringify(data));
