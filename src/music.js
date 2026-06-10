@@ -13,21 +13,26 @@ function trackFor(name) {
   return tracks[name];
 }
 
+function resume() {
+  if (!current || muted) return;
+  const a = trackFor(current);
+  if (a.paused) a.play().catch(() => {});
+}
+
 export const music = {
   play(name) {
     if (!name || current === name) return;
     if (current) trackFor(current).pause();
     current = name;
-    if (unlocked && !muted) trackFor(name).play().catch(() => {});
+    if (unlocked) resume();
   },
   unlock() {
-    if (unlocked) return;
     unlocked = true;
-    if (current && !muted) trackFor(current).play().catch(() => {});
+    resume();
   },
   toggleMute() {
     muted = !muted;
-    if (current) muted ? trackFor(current).pause() : trackFor(current).play().catch(() => {});
+    if (muted) { if (current) trackFor(current).pause(); } else resume();
     return muted;
   },
   get muted() { return muted; },

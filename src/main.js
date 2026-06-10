@@ -5,9 +5,8 @@ import { initTouch } from './touch.js';
 import { stack, scenes } from './scene.js';
 import { TitleScene } from './scenes/intro.js';
 
-window.addEventListener('keydown', () => music.unlock(), { once: true });
-window.addEventListener('pointerdown', () => music.unlock(), { once: true });
-window.addEventListener('touchstart', () => music.unlock(), { once: true });
+window.addEventListener('keydown', () => music.unlock());
+window.addEventListener('pointerdown', () => music.unlock());
 
 const canvas = document.getElementById('screen');
 const ctx = canvas.getContext('2d');
