@@ -165,8 +165,21 @@ export class BattleScene {
   }
 
   foeAttackSteps() {
-    const moves = monMoves(this.foe);
+    let moves = monMoves(this.foe);
+    if (this.trainer?.pp) {
+      this.foe.uses = this.foe.uses || Object.fromEntries(moves.map((m) => [m.name, this.trainer.pp]));
+      moves = moves.filter((m) => this.foe.uses[m.name] > 0);
+      if (!moves.length) {
+        const steps = [];
+        if (!this.flailNoted) {
+          this.flailNoted = true;
+          steps.push({ t: 'msg', text: `${this.trainer.name}: WHO FORGOT TO LOAD THE POLICY WEIGHTS?!` });
+        }
+        return [...steps, ...this.attackSteps(this.foe, this.ally, { name: 'Flail', type: 'NORMAL', power: 10 }, false)];
+      }
+    }
     const move = moves[Math.floor(Math.random() * moves.length)];
+    if (this.foe.uses) this.foe.uses[move.name]--;
     return this.attackSteps(this.foe, this.ally, move, false);
   }
 

@@ -103,6 +103,7 @@ export class IntroScene {
         const id = STARTERS[this.cursor];
         const mon = makeMon(id, 5);
         G.party = [mon];
+        G.starter = id;
         G.seen.add(id); G.caught.add(id);
         G.map = 'lab'; G.x = 6; G.y = 4; G.dir = 'down';
         G.healSpot = { map: 'lab', x: 6, y: 4 };

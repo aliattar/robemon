@@ -204,6 +204,7 @@ const THEMES = {
   interior: { ground: '#e0c8a0', groundDot: '#d0b890', path: '#d0b890', wild: '#e0c8a0', wildDetail: '#d0b890', tree: '#806040', treeDark: '#605030', trunk: '#605030', roof: '#806040', roofDark: '#605030', wall: '#b89060', wallDark: '#886840', fence: '#a08050', water: '#5090e8', flower: '#d04830', flower2: '#4878c0', crate: '#a87848', crateDark: '#785430' },
   hq: { ground: '#ecc88e', groundDot: '#dcb478', path: '#f4dca4', wild: '#ecc88e', wildDetail: '#dcb478', tree: '#80a048', treeDark: '#5c7c30', trunk: '#8c6840', roof: '#f8d048', roofDark: '#d0a820', wall: '#f8f0d8', wallDark: '#e0c468', fence: '#d0a820', water: '#5090e8', flower: '#f8d840', flower2: '#f8b820', crate: '#c89858', crateDark: '#946c38', plant: '#68a838', plantDark: '#48802c', lemon: '#f8d020' },
   arena: { ground: '#1c1c24', groundDot: '#26262e', path: '#2a2a34', wild: '#1c1c24', wildDetail: '#26262e', tree: '#101014', treeDark: '#0a0a0c', trunk: '#101014', roof: '#101014', roofDark: '#0a0a0c', wall: '#16161c', wallDark: '#2c0a2c', fence: '#f828b8', water: '#1c1c24', flower: '#fff6d8', flower2: '#28e8f8', crate: '#26262e', crateDark: '#f828b8' },
+  dream: { ground: '#cdbfe8', groundDot: '#c0b0de', path: '#e6dcf6', wild: '#a995d6', wildDetail: '#7e66b8', tree: '#74c4bc', treeDark: '#549c94', trunk: '#8e7ab8', roof: '#b48ad0', roofDark: '#8a62a8', wall: '#e8def4', wallDark: '#b8a6d4', fence: '#b48ad0', water: '#f4b6d8', flower: '#fff2b0', flower2: '#ff9ed6' },
 };
 
 function makeTile(draw) {
@@ -301,6 +302,32 @@ export function tileset(theme) {
   };
   tiles['Y'] = makeTile((g) => facade(g, '#f8d048', '#d0a820'));
   tiles['y'] = makeTile((g) => { facade(g, '#f8c020', '#c89010'); g.fillStyle = 'rgba(255,255,255,0.3)'; g.fillRect(0, 0, 16, 2); });
+  const brick = (g) => {
+    g.fillStyle = '#9c4636'; g.fillRect(0, 0, 16, 16);
+    g.fillStyle = '#7c3026';
+    for (let y = 3; y < 16; y += 4) g.fillRect(0, y, 16, 1);
+    for (let y = 0; y < 16; y += 8) { g.fillRect(5, y, 1, 3); g.fillRect(11, y + 4, 1, 3); }
+  };
+  tiles['B'] = makeTile((g) => { brick(g); g.fillStyle = '#5e241c'; g.fillRect(0, 15, 16, 1); });
+  tiles['b'] = makeTile((g) => {
+    brick(g);
+    g.fillStyle = '#2e3a4a'; g.fillRect(2, 4, 4, 7); g.fillRect(10, 4, 4, 7);
+    g.fillStyle = '#bcd2e8'; g.fillRect(2, 4, 4, 2); g.fillRect(10, 4, 4, 2);
+  });
+  tiles['S'] = makeTile((g) => {
+    g.fillStyle = '#f0ece0'; g.fillRect(0, 0, 16, 16);
+    g.fillStyle = '#454548';
+    g.fillRect(1, 4, 4, 2); g.fillRect(7, 4, 3, 2); g.fillRect(12, 4, 3, 2);
+    g.fillRect(2, 9, 3, 2); g.fillRect(7, 9, 5, 2); g.fillRect(14, 9, 1, 2);
+    g.fillStyle = '#9c4636'; g.fillRect(0, 14, 16, 2);
+  });
+  tiles['C'] = makeTile((g) => {
+    g.fillStyle = '#32323c'; g.fillRect(0, 0, 16, 16);
+    g.fillStyle = '#1e1e26'; g.fillRect(0, 0, 16, 3); g.fillRect(0, 13, 16, 3);
+    g.fillStyle = '#4a4a56';
+    for (let x = 1; x < 16; x += 4) g.fillRect(x, 4, 1, 8);
+    g.fillStyle = '#f8d030'; g.fillRect(7, 6, 2, 1); g.fillRect(8, 7, 2, 1); g.fillRect(7, 8, 2, 1);
+  });
   const logoTile = makeTile((g) => (theme === 'hq' ? facade(g, t.wall, t.wallDark) : facade(g, '#f8d048', '#d0a820')));
   const paintLogo = () => {
     const g = logoTile.getContext('2d');
@@ -317,4 +344,4 @@ export function tileset(theme) {
 export const logoImg = new Image();
 logoImg.src = 'assets/lightberry-logo.png';
 
-export const SOLID_TILES = new Set(['T', '#', 'R', 'F', '~', 'o', 'P', 'Y', 'y', 'L']);
+export const SOLID_TILES = new Set(['T', '#', 'R', 'F', '~', 'o', 'P', 'Y', 'y', 'L', 'S', 'b', 'B', 'C']);

@@ -1,18 +1,26 @@
 import { MAPS, LEGENDARY_ORDER, LEGENDARY_LEVEL } from '../data/maps.js';
 import { MON } from '../data/dex.js';
 import { tileset, SOLID_TILES, charSprite, monSprite } from '../sprites.js';
-import { G, makeMon, healParty, markSeen } from '../state.js';
+import { G, makeMon, healParty, markSeen, addMon, recalc } from '../state.js';
 import { input } from '../input.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
 import { Dialog } from '../dialog.js';
 import { scenes } from '../scene.js';
-import { drawPanel, drawText, drawCursor } from '../ui.js';
+import { drawPanel, drawText, drawCursor, wrapText } from '../ui.js';
 import { BattleScene } from './battle.js';
 import { StartMenu } from './menu.js';
 
 const SPEED = 2;
 const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+const G1_QUIZ = [
+  { q: 'How tall is the UNITREE G1?', a: ['132 CM', '155 CM', '180 CM'], c: 0 },
+  { q: 'How many DOF can a G1 have?', a: ['9 TO 12', '23 TO 43', '88 TO 99'], c: 1 },
+  { q: 'How compact does a G1 fold up?', a: ['IT CANNOT FOLD', 'TO 100 CM', 'TO 69 CM'], c: 2 },
+  { q: 'How long does a G1 battery last?', a: ['ABOUT 2 HOURS', '12 HOURS', 'THREE DAYS'], c: 0 },
+  { q: 'How much does a G1 weigh?', a: ['12 KG', '35 KG', '80 KG'], c: 1 },
+];
 
 export class OverworldScene {
   constructor() {
@@ -49,8 +57,12 @@ export class OverworldScene {
     return this.map.rows[y]?.[x] ?? '#';
   }
 
+  npcs() {
+    return (this.map.npcs || []).filter((n) => !(n.hideIf && G.flags[n.hideIf]));
+  }
+
   npcAt(x, y) {
-    return (this.map.npcs || []).find((n) => n.x === x && n.y === y) || null;
+    return this.npcs().find((n) => n.x === x && n.y === y) || null;
   }
 
   walkable(x, y) {
@@ -69,7 +81,7 @@ export class OverworldScene {
   }
 
   updateWanderers(idle) {
-    for (const n of this.map.npcs || []) {
+    for (const n of this.npcs()) {
       if (!n.wander) continue;
       if (n.walking) {
         const tx = n.x * 16, ty = n.y * 16;
@@ -187,17 +199,21 @@ export class OverworldScene {
     sfx.encounter();
     this.flashT = 36;
     this.battleTrack = this.map.music === 'arena' ? 'arena' : 'battle';
-    this.pendingBattle = new BattleScene(null, { trainer: { name: t.name, mons, flag: t.flag, win: t.win } });
+    this.pendingBattle = new BattleScene(null, { trainer: { name: t.name, mons, flag: t.flag, win: t.win, pp: t.pp } });
+  }
+
+  ask(prompt, options, onPick) {
+    this.choice = { prompt, options, cursor: 0, onPick };
   }
 
   updateChoice() {
-    if (input.pressed('up') || input.pressed('down')) { this.choice.cursor = 1 - this.choice.cursor; sfx.blip(); }
+    const c = this.choice;
+    if (input.pressed('up')) { c.cursor = (c.cursor + c.options.length - 1) % c.options.length; sfx.blip(); }
+    if (input.pressed('down')) { c.cursor = (c.cursor + 1) % c.options.length; sfx.blip(); }
     if (input.pressed('b') || input.pressed('menu')) { sfx.back(); this.choice = null; return; }
     if (input.pressed('a')) {
-      const { cursor, onYes } = this.choice;
       this.choice = null;
-      if (cursor === 0) { sfx.select(); onYes(); }
-      else sfx.back();
+      c.onPick(c.cursor);
     }
   }
 
@@ -206,14 +222,14 @@ export class OverworldScene {
     const npc = this.npcAt(G.x + dx, G.y + dy);
     if (!npc) return;
     sfx.blip();
-    if (!npc.sign && !npc.mon && !npc.herman) {
+    if (!npc.sign && !npc.mon && !npc.herman && !npc.cix) {
       npc.facing = { up: 'down', down: 'up', left: 'right', right: 'left' }[G.dir];
     }
     if (npc.projector) { this.useProjector(); return; }
     if (npc.trainer) {
       const t = npc.trainer;
       if (G.flags[t.flag]) {
-        this.dialog.start(t.after, () => { this.choice = { label: 'REMATCH?', cursor: 0, onYes: () => this.startTrainerBattle(t) }; });
+        this.dialog.start(t.after, () => this.ask('REMATCH?', ['YES', 'NO'], (i) => { if (i === 0) { sfx.select(); this.startTrainerBattle(t); } }));
       } else {
         this.dialog.start(t.intro, () => this.startTrainerBattle(t));
       }
@@ -230,6 +246,42 @@ export class OverworldScene {
       }
       return;
     }
+    if (npc.gift) {
+      const g = npc.gift;
+      if (G.flags[g.flag]) { this.dialog.start(npc.after); return; }
+      this.dialog.start(npc.lines, () => {
+        G.flags[g.flag] = true;
+        const mon = makeMon(g.id, g.level);
+        mon.frail = true;
+        recalc(mon);
+        mon.hp = 1;
+        const where = addMon(mon);
+        sfx.catch();
+        this.dialog.start([`You received the broken ${MON[g.id].name}! It barely powers on. (HP 1)${where === 'box' ? ' It was sent to the BOX.' : ''}`]);
+      });
+      return;
+    }
+    if (npc.clout) {
+      const used = G.flags.tuoClout || 0;
+      if (used >= 3) { this.dialog.start(['TUO: The algorithm has moved on, friend. Engagement is dead. Come back next hype cycle.']); return; }
+      const target = G.party.find((m) => m.id === G.starter) || G.party[0];
+      this.dialog.start(npc.lines, () => {
+        G.flags.tuoClout = used + 1;
+        target.level++;
+        recalc(target);
+        sfx.levelUp();
+        this.dialog.start([`The clout is real! ${MON[target.id].name} grew to level ${target.level}!`]);
+      });
+      return;
+    }
+    if (npc.quiz) { this.startQuiz(npc); return; }
+    if (npc.astro) {
+      this.dialog.start(npc.lines, () => {
+        G.flags[npc.astro.flag] = true;
+        this.startBattle(makeMon(npc.mon, npc.astro.level), npc.mon);
+      });
+      return;
+    }
     if (npc.heal) {
       this.dialog.start(npc.lines, () => {
         healParty();
@@ -239,6 +291,31 @@ export class OverworldScene {
       return;
     }
     this.dialog.start(npc.lines);
+  }
+
+  startQuiz(npc) {
+    if (G.flags.unitreeG1) {
+      this.dialog.start(['MOLLY: One G1 per customer! The spec sheet is timeless, though. Read it again sometime.']);
+      return;
+    }
+    this.dialog.start(npc.lines, () => {
+      const qs = [...G1_QUIZ].sort(() => Math.random() - 0.5).slice(0, 3);
+      const ask = (i) => {
+        if (i === qs.length) {
+          G.flags.unitreeG1 = true;
+          const where = addMon(makeMon('g1', 10));
+          sfx.catch();
+          this.dialog.start(['MOLLY: Three for three. You actually read the spec sheet. Lucas, fetch a crate!', `You received a UNITREE G1!${where === 'box' ? ' It was sent to the BOX.' : ''}`]);
+          return;
+        }
+        const q = qs[i];
+        this.ask(`MOLLY: Question ${i + 1}. ${q.q}`, q.a, (idx) => {
+          if (idx === q.c) { sfx.select(); ask(i + 1); }
+          else { sfx.bump(); this.dialog.start(['MOLLY: Wrong! No deal. Study the spec sheet and come back.', 'LUCAS: ...']); }
+        });
+      };
+      ask(0);
+    });
   }
 
   useProjector() {
@@ -275,7 +352,7 @@ export class OverworldScene {
     }
 
     const actors = [];
-    for (const n of this.map.npcs || []) actors.push({ y: n.py ?? n.y * 16, draw: () => this.drawNpc(ctx, n, camX, camY) });
+    for (const n of this.npcs()) actors.push({ y: n.py ?? n.y * 16, draw: () => this.drawNpc(ctx, n, camX, camY) });
     actors.push({ y: this.py, draw: () => this.drawPlayer(ctx, camX, camY) });
     actors.sort((a, b) => a.y - b.y).forEach((a) => a.draw());
 
@@ -288,11 +365,16 @@ export class OverworldScene {
     this.dialog.draw(ctx);
 
     if (this.choice) {
-      drawPanel(ctx, 164, 70, 72, 44);
-      drawText(ctx, this.choice.label, 172, 76);
-      drawText(ctx, 'YES', 184, 88);
-      drawText(ctx, 'NO', 184, 100);
-      drawCursor(ctx, 176, 88 + this.choice.cursor * 12);
+      const { prompt, options, cursor } = this.choice;
+      drawPanel(ctx, 2, 116, 236, 42);
+      wrapText(prompt, 36).slice(0, 3).forEach((l, i) => drawText(ctx, l, 10, 123 + i * 10));
+      const w = Math.max(...options.map((o) => o.length)) * 6 + 26;
+      const h = options.length * 12 + 10;
+      drawPanel(ctx, 234 - w, 112 - h, w, h);
+      options.forEach((o, i) => {
+        drawText(ctx, o, 250 - w, 118 - h + i * 12);
+        if (cursor === i) drawCursor(ctx, 242 - w, 118 - h + i * 12);
+      });
     }
 
     if (this.flashT > 0 && Math.floor(this.flashT / 6) % 2 === 0) {
@@ -316,6 +398,23 @@ export class OverworldScene {
       ctx.fillStyle = '#604020';
       ctx.fillRect(x + 3, y + 4, 10, 1);
       ctx.fillRect(x + 3, y + 6, 7, 1);
+      return;
+    }
+    if (n.cix) {
+      const r = (c, ox, oy, w, h) => { ctx.fillStyle = c; ctx.fillRect(x + ox, y + oy, w, h); };
+      r('#2a2a30', 4, 0, 8, 3);
+      r('#f0c8a0', 4, 3, 8, 3);
+      r('#181820', 5, 4, 6, 1);
+      r('#181820', 2, 6, 12, 4);
+      r('#f0c8a0', 0, 5, 2, 7);
+      r('#f0c8a0', 14, 5, 2, 7);
+      r('#d8a878', 0, 8, 2, 1);
+      r('#d8a878', 14, 8, 2, 1);
+      r('#f0c8a0', 0, 12, 2, 2);
+      r('#f0c8a0', 14, 12, 2, 2);
+      r('#283050', 4, 10, 8, 3);
+      r('#283050', 4, 13, 3, 2);
+      r('#283050', 9, 13, 3, 2);
       return;
     }
     if (n.herman) {

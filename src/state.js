@@ -32,6 +32,9 @@ export function makeMon(id, level) {
 export function recalc(mon) {
   const frac = mon.hp / mon.maxHp;
   Object.assign(mon, statsAt(mon.id, mon.level));
+  if (mon.frail) {
+    for (const k of ['maxHp', 'atk', 'def', 'spa', 'spd']) mon[k] = Math.max(5, Math.round(mon[k] * 0.85));
+  }
   mon.hp = Math.max(1, Math.round(mon.maxHp * frac));
 }
 
@@ -66,7 +69,7 @@ export function firstAlive() {
 export function save() {
   const data = {
     map: G.map, x: G.x, y: G.y, dir: G.dir,
-    party: G.party, box: G.box,
+    party: G.party, box: G.box, starter: G.starter,
     seen: [...G.seen], caught: [...G.caught],
     flags: G.flags, healSpot: G.healSpot,
   };

@@ -4,11 +4,11 @@ import { MAPS, LEGENDARY_ORDER } from './src/data/maps.js';
 let errors = 0;
 const err = (msg) => { errors++; console.log('ERR:', msg); };
 
-if (DEX.length !== 79) err(`dex has ${DEX.length} entries`);
+if (DEX.length !== 78) err(`dex has ${DEX.length} entries`);
 const nums = new Set(DEX.map((m) => m.num));
-if (nums.size !== 79) err('duplicate dex numbers');
+if (nums.size !== 78) err('duplicate dex numbers');
 const ids = new Set(DEX.map((m) => m.id));
-if (ids.size !== 79) err('duplicate dex ids');
+if (ids.size !== 78) err('duplicate dex ids');
 for (const m of DEX) {
   if (m.evo && !MON[m.evo.to]) err(`${m.id} evolves to unknown ${m.evo.to}`);
   if (!m.moves.length) err(`${m.id} has no moves`);
@@ -42,4 +42,4 @@ for (const [key, map] of Object.entries(MAPS)) {
 }
 
 console.log(errors ? `${errors} errors` : 'data OK');
-console.log('sample stats:', ['go2', 'g1', 'h2', 'optimus-gen-2', 'icub', 'atlas', 'iron', 'gundam'].map((id) => `${id}=${JSON.stringify(MON[id].stats)} catch=${MON[id].catchRate}`).join('\n'));
+console.log('sample stats:', ['go2', 'g1', 'h2', 'optimus-1', 'icub', 'atlas', 'iron', 'gundam'].map((id) => `${id}=${JSON.stringify(MON[id].stats)} catch=${MON[id].catchRate}`).join('\n'));
