@@ -481,7 +481,7 @@ export class BattleScene {
     const y = 52 + drop;
     ctx.save();
     if (drop) { ctx.beginPath(); ctx.rect(0, 0, 240, 116); ctx.clip(); }
-    sprite.draw(ctx, x, y, 64, true);
+    sprite.drawBack(ctx, x, y, 64);
     ctx.restore();
     if (sprite.isPlaceholder() && !drop) drawText(ctx, name(this.ally).slice(0, 12), x + 32 - name(this.ally).slice(0, 12).length * 3, y + 54, '#50585f');
   }

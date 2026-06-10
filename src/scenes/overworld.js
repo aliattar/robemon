@@ -453,7 +453,7 @@ export class OverworldScene {
       return;
     }
     if (n.mon) {
-      monSprite(MON[n.mon]).draw(ctx, x, y, 16);
+      monSprite(MON[n.mon]).drawOw(ctx, x, y, 16);
       return;
     }
     const frames = charSprite(n.pal);

@@ -107,18 +107,80 @@ function makePlaceholder(mon) {
 
 const spriteCache = {};
 
+function contentBox(img) {
+  const c = makeCanvas(img.width, img.height);
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  const data = g.getImageData(0, 0, img.width, img.height).data;
+  let minX = img.width, minY = img.height, maxX = -1, maxY = -1;
+  for (let y = 0; y < img.height; y++) {
+    for (let x = 0; x < img.width; x++) {
+      if (data[(y * img.width + x) * 4 + 3] > 8) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  return maxX < 0 ? null : { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
+}
+
 export function monSprite(mon) {
   if (spriteCache[mon.id]) return spriteCache[mon.id];
-  const entry = { img: null, placeholder: makePlaceholder(mon), ready: false };
+  const entry = { img: null, placeholder: makePlaceholder(mon), ready: false, box: null };
   const img = new Image();
-  img.onload = () => { entry.img = img; entry.ready = true; };
+  img.onload = () => { entry.img = img; entry.ready = true; entry.box = contentBox(img); };
   img.src = `assets/sprites/${mon.id}.png`;
+  const loadVariant = (key) => {
+    if (entry[key] !== undefined) return;
+    entry[key] = null;
+    const im = new Image();
+    im.onload = () => { entry[key] = im; };
+    im.src = `assets/sprites/${mon.id}-${key}.png`;
+  };
   entry.draw = (ctx, x, y, size = 64, flip = false) => {
     const src = entry.ready ? entry.img : entry.placeholder;
     ctx.save();
     ctx.imageSmoothingEnabled = false;
     if (flip) { ctx.translate(x + size, y); ctx.scale(-1, 1); ctx.drawImage(src, 0, 0, size, size); }
     else ctx.drawImage(src, x, y, size, size);
+    ctx.restore();
+  };
+  entry.drawBack = (ctx, x, y, size = 64) => {
+    loadVariant('back');
+    if (entry.back) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(entry.back, x, y, size, size);
+      ctx.restore();
+      return;
+    }
+    if (entry.ready && entry.box) {
+      const b = entry.box;
+      const s = Math.min(2, size / b.w, size / b.h);
+      const w = Math.round(b.w * s), h = Math.round(b.h * s);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.translate(x + (size + w) / 2, y + size - h);
+      ctx.scale(-1, 1);
+      ctx.drawImage(entry.img, b.x, b.y, b.w, b.h, 0, 0, w, h);
+      ctx.restore();
+      return;
+    }
+    entry.draw(ctx, x, y, size, true);
+  };
+  entry.drawOw = (ctx, x, y, size = 16) => {
+    loadVariant('ow');
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    if (entry.ow) ctx.drawImage(entry.ow, x, y, size, size);
+    else if (entry.ready && entry.box) {
+      const b = entry.box;
+      const s = Math.min(size / b.w, size / b.h);
+      const w = Math.max(1, Math.round(b.w * s)), h = Math.max(1, Math.round(b.h * s));
+      ctx.drawImage(entry.img, b.x, b.y, b.w, b.h, x + ((size - w) >> 1), y + size - h, w, h);
+    } else entry.draw(ctx, x, y, size);
     ctx.restore();
   };
   entry.isPlaceholder = () => !entry.ready;
