@@ -222,7 +222,7 @@ export class OverworldScene {
     const npc = this.npcAt(G.x + dx, G.y + dy);
     if (!npc) return;
     sfx.blip();
-    if (!npc.sign && !npc.mon && !npc.herman && !npc.cix) {
+    if (!npc.sign && !npc.mon && !npc.herman && !npc.cix && !npc.nima) {
       npc.facing = { up: 'down', down: 'up', left: 'right', right: 'left' }[G.dir];
     }
     if (npc.projector) { this.useProjector(); return; }
@@ -262,11 +262,11 @@ export class OverworldScene {
       return;
     }
     if (npc.clout) {
-      const used = G.flags.tuoClout || 0;
-      if (used >= 3) { this.dialog.start(['TUO: The algorithm has moved on, friend. Engagement is dead. Come back next hype cycle.']); return; }
+      const used = G.flags[npc.clout.flag] || 0;
+      if (used >= 3) { this.dialog.start([npc.clout.done]); return; }
       const target = G.party.find((m) => m.id === G.starter) || G.party[0];
       this.dialog.start(npc.lines, () => {
-        G.flags.tuoClout = used + 1;
+        G.flags[npc.clout.flag] = used + 1;
         target.level++;
         recalc(target);
         sfx.levelUp();
@@ -415,6 +415,23 @@ export class OverworldScene {
       r('#283050', 4, 10, 8, 3);
       r('#283050', 4, 13, 3, 2);
       r('#283050', 9, 13, 3, 2);
+      return;
+    }
+    if (n.nima) {
+      const r = (c, ox, oy, w, h) => { ctx.fillStyle = c; ctx.fillRect(x + ox, y + oy, w, h); };
+      r('#181820', 3, 0, 10, 3);
+      r('#f0c8a0', 4, 3, 8, 3);
+      r('#0c0c12', 3, 3, 10, 2);
+      r('#28e8f8', 4, 4, 3, 1);
+      r('#f828b8', 9, 4, 2, 1);
+      r('#202028', 2, 6, 12, 4);
+      r('#f828b8', 2, 6, 1, 4);
+      r('#28e8f8', 13, 6, 1, 4);
+      r('#f0c8a0', 1, 6, 1, 3);
+      r('#f0c8a0', 14, 6, 1, 3);
+      r('#16161c', 4, 10, 8, 3);
+      r('#16161c', 4, 13, 3, 2);
+      r('#16161c', 9, 13, 3, 2);
       return;
     }
     if (n.herman) {

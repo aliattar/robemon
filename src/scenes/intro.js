@@ -73,7 +73,7 @@ export class IntroScene {
     this.t = 0;
     this.dialog.start([
       'Hello there! Welcome to the world of ROBÉMON!',
-      'My name is ALMOND. People call me the ROBOT PROFESSOR.',
+      'My name is ISHIGURO. People call me the ROBOT PROFESSOR.',
       'This world is inhabited by creatures called ROBÉMON. Humanoid robots, quadrupeds, astromechs...',
       'Some ship at scale. Some are eternal demos. Studying them is my life work.',
       'Your very own robot adventure is about to unfold. But first...',

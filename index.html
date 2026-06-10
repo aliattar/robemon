@@ -2,27 +2,145 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ROBÉMON</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ROBÉMON — Catch real robots</title>
+<meta name="theme-color" content="#32323e">
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://robemon.com/" />
+<meta property="og:title" content="ROBÉMON" />
+<meta property="og:description" content="Catch real robots." />
+<meta property="og:image" content="https://robemon.com/assets/og-cover.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="ROBÉMON — Catch real robots. Pixel-art cover with a charge ball thrown at a lineup of real-world robots." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="ROBÉMON" />
+<meta name="twitter:description" content="Catch real robots." />
+<meta name="twitter:image" content="https://robemon.com/assets/og-cover.png" />
 <style>
   html, body {
     margin: 0;
     height: 100%;
     background: #181820;
+    overflow: hidden;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+  #game {
+    flex: 1;
+    min-height: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
   }
   canvas {
     image-rendering: pixelated;
     image-rendering: crisp-edges;
     background: #000;
   }
+  #controls { display: none; }
+
+  body.touch {
+    background: #32323e;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body.touch #game {
+    background: #14141c;
+    border-radius: 0 0 24px 24px;
+    box-shadow: inset 0 -3px 0 #0c0c12;
+  }
+  body.touch #controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 36vh;
+    min-height: 175px;
+    padding: 0 5vw;
+    background: linear-gradient(#3a3a47, #2c2c37);
+    position: relative;
+  }
+  #dpad {
+    width: 132px;
+    height: 132px;
+    position: relative;
+    flex: none;
+  }
+  #dpad::before, #dpad::after {
+    content: '';
+    position: absolute;
+    background: linear-gradient(#23232c, #16161d);
+    border-radius: 8px;
+    box-shadow: 0 3px 0 #0a0a0e;
+  }
+  #dpad::before { left: 44px; top: 0; width: 44px; height: 132px; }
+  #dpad::after { left: 0; top: 44px; width: 132px; height: 44px; }
+  #dpad-nub {
+    position: absolute;
+    left: 54px;
+    top: 54px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #2e2e38, #101016);
+    z-index: 1;
+  }
+  #start-btn {
+    flex: none;
+    padding: 7px 22px;
+    border-radius: 999px;
+    background: linear-gradient(#5a5a68, #3e3e4a);
+    box-shadow: 0 3px 0 #0a0a0e;
+    transform: rotate(-25deg);
+    color: #c8c8d4;
+    font: bold 11px/1 monospace;
+    letter-spacing: 2px;
+  }
+  #btns {
+    flex: none;
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+  }
+  .ab {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #b04a7e, #7c2450);
+    box-shadow: 0 4px 0 #4a1430;
+    color: #f4d9e6;
+    font: bold 20px/62px monospace;
+    text-align: center;
+  }
+  #btn-a { margin-top: -26px; }
+  .ab.active, #start-btn.active { transform: translateY(3px); box-shadow: 0 1px 0 #0a0a0e; }
+  #start-btn.active { transform: rotate(-25deg) translateY(3px); }
+  #controls .brand {
+    position: absolute;
+    bottom: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #565664;
+    font: italic bold 11px/1 monospace;
+    letter-spacing: 3px;
+  }
 </style>
 </head>
 <body>
-<canvas id="screen" width="240" height="160"></canvas>
+<div id="game"><canvas id="screen" width="240" height="160"></canvas></div>
+<div id="controls">
+  <div id="dpad"><div id="dpad-nub"></div></div>
+  <div id="start-btn">START</div>
+  <div id="btns">
+    <div class="ab" id="btn-b">B</div>
+    <div class="ab" id="btn-a">A</div>
+  </div>
+  <div class="brand">ROBÉMON COLOR</div>
+</div>
 <script type="module" src="src/main.js"></script>
 </body>
 </html>

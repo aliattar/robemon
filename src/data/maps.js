@@ -49,7 +49,7 @@ export const MAPS = {
       ],
     },
     npcs: [
-      { x: 10, y: 4, name: 'AIDE', pal: 1, dir: 'down', lines: ["PROF. ALMOND rents a unit in the AMERICAN INDUSTRIAL CENTER. Big brick building, big brick dreams.", 'The DEMO YARD south of here is full of American prototypes. Big ATK, paper DEF.'] },
+      { x: 10, y: 4, name: 'AIDE', pal: 1, dir: 'down', lines: ["PROF. ISHIGURO rents a unit in the AMERICAN INDUSTRIAL CENTER. Big brick building, big brick dreams.", 'The DEMO YARD south of here is full of American prototypes. Big ATK, paper DEF.'] },
       { x: 16, y: 20, name: 'YC KID', pal: 2, dir: 'up', lines: ['Every robot in that yard raised a seed round. None of them have shipped!', 'I heard an ATLAS shows up there once in a blue moon...'] },
       { x: 10, y: 12, sign: true, lines: ['LIGHTBERRY PLAZA', 'Flagship office. We taught the robots to talk. We are so, so sorry.'] },
       { x: 8, y: 20, sign: true, lines: ['DEMO YARD - trainers welcome.', 'Wild robots: levels 6-11. Liability waivers at the gate.'] },
@@ -167,7 +167,7 @@ export const MAPS = {
     ],
     warps: [{ x: 6, y: 6, to: 'garage-town', tx: 8, ty: 4 }],
     npcs: [
-      { x: 6, y: 2, name: 'PROF. ALMOND', pal: 0, dir: 'down', lines: ['How is your ROBODEX coming along?', 'Remember: catch rate is inversely proportional to MSRP. A GO2 is easy. An ATLAS will fight the ball.'] },
+      { x: 6, y: 2, name: 'PROF. ISHIGURO', pal: 0, dir: 'down', lines: ['How is your ROBODEX coming along?', 'Remember: catch rate is inversely proportional to MSRP. A GO2 is easy. An ATLAS will fight the ball.'] },
       { x: 2, y: 2, name: 'CHARGE DOCK', pal: 3, dir: 'down', heal: true, lines: ['The CHARGE DOCK hums softly.'] },
       { x: 10, y: 2, name: 'INTERN', pal: 2, dir: 'left', lines: ['The professor rents Unit 8, between a kombucha brewery and a CNC shop. Very Dogpatch.', 'He derives battle stats from real spec sheets. SPD is literally meters per second!'] },
     ],
@@ -221,6 +221,8 @@ export const MAPS = {
       { x: 12, y: 11, name: 'RECEPTIONIST', pal: 4, dir: 'down', heal: true, lines: ['RECEPTIONIST: Welcome to LIGHTBERRY! Complimentary battery top-up for all visitors...', 'RECEPTIONIST: All charged! The CEO is at the back, under the logo.'] },
       { x: 4, y: 3, name: 'ENGINEER', pal: 1, dir: 'down', lines: ['ENGINEER: We shipped contextual awareness last sprint. Now the robots notice when you are sad.', 'ENGINEER: It is a lot.'] },
       { x: 17, y: 10, name: 'INTERN', pal: 2, dir: 'left', lines: ['INTERN: My whole job is apologizing to the robots. Retention is up 40 percent.'] },
+      { x: 6, y: 4, name: 'STEPHAN', pal: 1, dir: 'right', lines: ["STEPHAN: I'm Stephan. Don't trust the other Stephan. He's a LARP."] },
+      { x: 8, y: 4, name: 'STEPHAN', pal: 6, dir: 'left', lines: ["STEPHAN: He says I'M the fake? I was Stephan before it was cool.", 'STEPHAN: We are not the same person. Probably.'] },
       { x: 3, y: 10, name: 'DESIGNER', pal: 6, dir: 'right', lines: ['DESIGNER: I designed the lemon trees. The robots water them with exactly 104 milliliters. Each. Daily.'] },
       { x: 10, y: 3, name: 'R2-D2', mon: 'r2-d2', wander: true, lines: ['R2-D2: BWEEP! BOOP-BEE-DOO! BWEE-DEET-DEET!', '(It sounds extremely contextually aware.)'] },
       { x: 4, y: 9, name: 'HERMAN', herman: true, wander: true, lines: ["HERMAN: I'm Herman the Kiwibot. I used to deliver burritos at robot.com. Now I deliver insights.", 'HERMAN: My eyes are LEDs but my love is real.'] },
@@ -282,7 +284,7 @@ export const MAPS = {
     warps: [{ x: 5, y: 4, to: 'shenzhen-town', tx: 7, ty: 4 }],
     npcs: [
       {
-        x: 5, y: 1, name: 'ROBOTUO', pal: 6, dir: 'down', clout: true,
+        x: 5, y: 1, name: 'ROBOTUO', pal: 6, dir: 'down', clout: { flag: 'tuoClout', done: 'TUO: The algorithm has moved on, friend. Engagement is dead. Come back next hype cycle.' },
         lines: ['TUO: RoboTuo here, LIVE to one million followers! Say hi to the chat!', 'TUO: Chat LOVES your starter. Ratio incoming. Boom - Twitter clout deployed!'],
       },
       { x: 2, y: 3, name: 'FAN', pal: 2, dir: 'right', lines: ['FAN: I came all the way from Hanoi just to watch him benchmark grippers.'] },
@@ -548,11 +550,12 @@ export const MAPS = {
       { x: 6, y: 12, name: 'WORKER', pal: 5, dir: 'right', lines: ['Those cable bundles are live. Factory robots nest in them. Hard to break, very fast.', 'Rumor says an XPENG IRON with a biomimetic spine prowls here. 3000 TOPS. Good luck.'] },
       { x: 13, y: 16, name: 'FOREMAN', pal: 6, dir: 'left', lines: ['The museum up north keeps the retro legends. P2 woke up in 1996 and the world was never the same.'] },
       { x: 12, y: 23, sign: true, lines: ['SHENZHEN FACTORY ROUTE', 'Hard hats required. Hype prohibited.'] },
+      { x: 12, y: 4, sign: true, lines: ['MEMORIAL TOWN', 'Where the robots that came first are never forgotten.'] },
     ],
   },
 
   museum: {
-    name: 'RETRO MUSEUM',
+    name: 'MEMORIAL TOWN MUSEUM',
     theme: 'museum',
     music: 'museum',
     grassLabel: 'exhibit static',
@@ -584,6 +587,11 @@ export const MAPS = {
       { x: 2, y: 11, name: 'CURATOR', pal: 0, dir: 'right', lines: ['Welcome to the RETRO MUSEUM. Step into the exhibit static and history may step back.', 'The PROJECTOR in the center hall screens the cinema legends. One encounter each. Do not waste it.'] },
       { x: 16, y: 7, name: 'PROJECTOR', pal: 3, projector: true, lines: [] },
       { x: 6, y: 6, name: 'VISITOR', pal: 2, dir: 'up', lines: ['They gave AIBO units real funerals. I am not crying, my coolant loop is leaking.'] },
+      {
+        x: 13, y: 10, name: 'NIMA', nima: true,
+        clout: { flag: 'nimaClout', done: 'NIMA: The feed has moved on. Even legends scroll past. Catch me in the next region.' },
+        lines: ['NIMA: I have met every robot on this planet. I was there when ASIMO was still a P3 getting blessed by the Vatican.', 'NIMA: Cassie ran 100 m in 24.73 seconds. AgiBot A2 walked 106 km to Shanghai. I livestreamed BOTH.', 'NIMA: Your starter? Iconic frame geometry. This is going straight to my feed. 2M views minimum.'],
+      },
     ],
   },
 };

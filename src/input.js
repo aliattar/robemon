@@ -28,6 +28,11 @@ window.addEventListener('blur', () => held.clear());
 export const input = {
   held: (btn) => held.has(btn),
   pressed: (btn) => pressed.has(btn),
+  press(btn) {
+    if (!held.has(btn)) pressed.add(btn);
+    held.add(btn);
+  },
+  release(btn) { held.delete(btn); },
   dir() {
     for (const d of ['up', 'down', 'left', 'right']) if (held.has(d)) return d;
     return null;
