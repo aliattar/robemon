@@ -18,6 +18,18 @@
 <meta name="twitter:title" content="ROBÉMON" />
 <meta name="twitter:description" content="Catch real robots." />
 <meta name="twitter:image" content="https://robemon.com/assets/og-cover.png" />
+<script>
+(function () {
+  var KEY = 'robemon-save-v1';
+  if (location.protocol === 'http:' && location.hostname === 'robemon.com') {
+    var save = localStorage.getItem(KEY);
+    location.replace('https://robemon.com/' + (save ? '#save=' + encodeURIComponent(save) : ''));
+  } else if (location.hash.indexOf('#save=') === 0) {
+    if (!localStorage.getItem(KEY)) localStorage.setItem(KEY, decodeURIComponent(location.hash.slice(6)));
+    history.replaceState(null, '', location.pathname);
+  }
+})();
+</script>
 <style>
   html, body {
     margin: 0;
