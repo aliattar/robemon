@@ -1,0 +1,352 @@
+import { MAPS, LEGENDARY_ORDER, LEGENDARY_LEVEL } from '../data/maps.js';
+import { MON } from '../data/dex.js';
+import { tileset, SOLID_TILES, charSprite, monSprite } from '../sprites.js';
+import { G, makeMon, healParty, markSeen } from '../state.js';
+import { input } from '../input.js';
+import { sfx } from '../audio.js';
+import { music } from '../music.js';
+import { Dialog } from '../dialog.js';
+import { scenes } from '../scene.js';
+import { drawPanel, drawText, drawCursor } from '../ui.js';
+import { BattleScene } from './battle.js';
+import { StartMenu } from './menu.js';
+
+const SPEED = 2;
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+
+export class OverworldScene {
+  constructor() {
+    this.dialog = new Dialog();
+    this.choice = null;
+    this.fade = null;
+    this.flashT = 0;
+    this.pendingBattle = null;
+    this.animT = 0;
+    this.loadMap();
+  }
+
+  loadMap() {
+    this.mapKey = G.map;
+    this.map = MAPS[G.map];
+    this.tiles = tileset(this.map.theme);
+    this.px = G.x * 16;
+    this.py = G.y * 16;
+    this.moving = false;
+    this.bannerT = 110;
+    for (const n of this.map.npcs || []) {
+      if (!n.wander) continue;
+      n.hx = n.hx ?? n.x;
+      n.hy = n.hy ?? n.y;
+      n.px = n.x * 16;
+      n.py = n.y * 16;
+      n.walking = false;
+      n.cool = 30 + Math.floor(Math.random() * 120);
+    }
+    music.play(this.map.music || 'city-start');
+  }
+
+  tileAt(x, y) {
+    return this.map.rows[y]?.[x] ?? '#';
+  }
+
+  npcAt(x, y) {
+    return (this.map.npcs || []).find((n) => n.x === x && n.y === y) || null;
+  }
+
+  walkable(x, y) {
+    const t = this.tileAt(x, y);
+    if (SOLID_TILES.has(t) || t === '#') return false;
+    if (this.npcAt(x, y)) return false;
+    return true;
+  }
+
+  warpAt(x, y) {
+    return (this.map.warps || []).find((w) => w.x === x && w.y === y) || null;
+  }
+
+  startFade(cb) {
+    this.fade = { t: 0, phase: 'out', cb };
+  }
+
+  updateWanderers(idle) {
+    for (const n of this.map.npcs || []) {
+      if (!n.wander) continue;
+      if (n.walking) {
+        const tx = n.x * 16, ty = n.y * 16;
+        n.px += Math.sign(tx - n.px);
+        n.py += Math.sign(ty - n.py);
+        if (n.px === tx && n.py === ty) n.walking = false;
+        continue;
+      }
+      if (!idle || --n.cool > 0) continue;
+      n.cool = 60 + Math.floor(Math.random() * 180);
+      const dir = ['up', 'down', 'left', 'right'][Math.floor(Math.random() * 4)];
+      const [dx, dy] = DIRS[dir];
+      const nx = n.x + dx, ny = n.y + dy;
+      if (Math.abs(nx - n.hx) > 2 || Math.abs(ny - n.hy) > 2) continue;
+      if (!this.walkable(nx, ny) || (nx === G.x && ny === G.y) || this.warpAt(nx, ny)) continue;
+      n.x = nx; n.y = ny;
+      n.dir = dir;
+      n.facing = null;
+      n.walking = true;
+    }
+  }
+
+  update() {
+    if (G.dirty) { G.dirty = false; this.loadMap(); }
+    if (this.bannerT > 0) this.bannerT--;
+    this.animT++;
+    music.play(this.map.music || 'city-start');
+
+    const idle = !this.fade && this.flashT === 0 && !this.dialog.active && !this.choice;
+    this.updateWanderers(idle);
+
+    if (this.fade) {
+      this.fade.t += 0.08;
+      if (this.fade.t >= 1) {
+        if (this.fade.phase === 'out') { this.fade.cb(); this.fade = { t: 0, phase: 'in' }; }
+        else this.fade = null;
+      }
+      return;
+    }
+
+    if (this.flashT > 0) {
+      this.flashT--;
+      if (this.flashT === 0) {
+        music.play(this.battleTrack);
+        scenes.push(this.pendingBattle);
+        this.pendingBattle = null;
+      }
+      return;
+    }
+
+    if (this.choice) { this.updateChoice(); return; }
+    if (this.dialog.active) { this.dialog.update(); return; }
+
+    if (this.moving) {
+      const tx = G.x * 16, ty = G.y * 16;
+      this.px += Math.sign(tx - this.px) * SPEED;
+      this.py += Math.sign(ty - this.py) * SPEED;
+      if (this.px === tx && this.py === ty) {
+        this.moving = false;
+        this.onArrive();
+      }
+      return;
+    }
+
+    if (input.pressed('menu')) { sfx.select(); scenes.push(new StartMenu()); return; }
+    if (input.pressed('a')) { this.interact(); return; }
+
+    const dir = input.dir();
+    if (!dir) return;
+    G.dir = dir;
+    const [dx, dy] = DIRS[dir];
+    const nx = G.x + dx, ny = G.y + dy;
+    if (this.walkable(nx, ny)) {
+      G.x = nx; G.y = ny;
+      this.moving = true;
+    }
+  }
+
+  onArrive() {
+    const warp = this.warpAt(G.x, G.y);
+    if (warp) {
+      sfx.select();
+      this.startFade(() => {
+        G.map = warp.to; G.x = warp.tx; G.y = warp.ty;
+        this.loadMap();
+      });
+      return;
+    }
+    if (this.tileAt(G.x, G.y) === 'w') this.tryEncounter();
+  }
+
+  tryEncounter() {
+    const enc = this.map.encounters;
+    if (!enc || Math.random() >= enc.rate) return;
+    const total = enc.table.reduce((s, e) => s + e[3], 0);
+    let r = Math.random() * total;
+    let pick = enc.table[0];
+    for (const e of enc.table) { r -= e[3]; if (r < 0) { pick = e; break; } }
+    const [id, lo, hi] = pick;
+    const level = lo + Math.floor(Math.random() * (hi - lo + 1));
+    this.startBattle(makeMon(id, level), null);
+  }
+
+  startBattle(wild, legendaryId) {
+    markSeen(wild.id);
+    sfx.encounter();
+    this.flashT = 36;
+    this.battleTrack = legendaryId ? 'route-celebration' : this.map.music === 'arena' ? 'arena' : 'battle';
+    this.pendingBattle = new BattleScene(wild, { legendaryId, location: this.map.name });
+  }
+
+  startTrainerBattle(t) {
+    const mons = t.party.map(([id, lv]) => makeMon(id, lv));
+    markSeen(mons[0].id);
+    sfx.encounter();
+    this.flashT = 36;
+    this.battleTrack = this.map.music === 'arena' ? 'arena' : 'battle';
+    this.pendingBattle = new BattleScene(null, { trainer: { name: t.name, mons, flag: t.flag, win: t.win } });
+  }
+
+  updateChoice() {
+    if (input.pressed('up') || input.pressed('down')) { this.choice.cursor = 1 - this.choice.cursor; sfx.blip(); }
+    if (input.pressed('b') || input.pressed('menu')) { sfx.back(); this.choice = null; return; }
+    if (input.pressed('a')) {
+      const { cursor, onYes } = this.choice;
+      this.choice = null;
+      if (cursor === 0) { sfx.select(); onYes(); }
+      else sfx.back();
+    }
+  }
+
+  interact() {
+    const [dx, dy] = DIRS[G.dir];
+    const npc = this.npcAt(G.x + dx, G.y + dy);
+    if (!npc) return;
+    sfx.blip();
+    if (!npc.sign && !npc.mon && !npc.herman) {
+      npc.facing = { up: 'down', down: 'up', left: 'right', right: 'left' }[G.dir];
+    }
+    if (npc.projector) { this.useProjector(); return; }
+    if (npc.trainer) {
+      const t = npc.trainer;
+      if (G.flags[t.flag]) {
+        this.dialog.start(t.after, () => { this.choice = { label: 'REMATCH?', cursor: 0, onYes: () => this.startTrainerBattle(t) }; });
+      } else {
+        this.dialog.start(t.intro, () => this.startTrainerBattle(t));
+      }
+      return;
+    }
+    if (npc.hm) {
+      if (G.flags.hmVoice) this.dialog.start(npc.after);
+      else {
+        this.dialog.start(npc.lines, () => {
+          G.flags.hmVoice = true;
+          sfx.catch();
+          this.dialog.start(['You obtained the LIGHTBERRY HM!', 'Use it from the start menu to teach a party robot its VOICE MOVE.']);
+        });
+      }
+      return;
+    }
+    if (npc.heal) {
+      this.dialog.start(npc.lines, () => {
+        healParty();
+        sfx.heal();
+        G.healSpot = { map: this.mapKey, x: G.x, y: G.y };
+      });
+      return;
+    }
+    this.dialog.start(npc.lines);
+  }
+
+  useProjector() {
+    G.flags.legends = G.flags.legends || {};
+    const next = LEGENDARY_ORDER.find((id) => !G.flags.legends[id]);
+    if (!next) {
+      this.dialog.start(['The projector plays the credits. You have met every legend of the silver screen.']);
+      return;
+    }
+    const mon = MON[next];
+    this.dialog.start(
+      [`The projector whirs to life...`, `${mon.name} steps out of the screen!`],
+      () => {
+        G.flags.legends[next] = true;
+        this.startBattle(makeMon(next, LEGENDARY_LEVEL), next);
+      },
+    );
+  }
+
+  draw(ctx) {
+    const mapW = this.map.rows[0].length * 16;
+    const mapH = this.map.rows.length * 16;
+    const camX = mapW <= 240 ? Math.floor((mapW - 240) / 2) : Math.max(0, Math.min(mapW - 240, this.px - 112));
+    const camY = mapH <= 160 ? Math.floor((mapH - 160) / 2) : Math.max(0, Math.min(mapH - 160, this.py - 72));
+    ctx.fillStyle = '#101018';
+    ctx.fillRect(0, 0, 240, 160);
+
+    const x0 = Math.floor(camX / 16), y0 = Math.floor(camY / 16);
+    for (let ty = y0; ty <= y0 + 10; ty++) {
+      for (let tx = x0; tx <= x0 + 15; tx++) {
+        const tile = this.tiles[this.tileAt(tx, ty)];
+        if (tile) ctx.drawImage(tile, tx * 16 - camX, ty * 16 - camY);
+      }
+    }
+
+    const actors = [];
+    for (const n of this.map.npcs || []) actors.push({ y: n.py ?? n.y * 16, draw: () => this.drawNpc(ctx, n, camX, camY) });
+    actors.push({ y: this.py, draw: () => this.drawPlayer(ctx, camX, camY) });
+    actors.sort((a, b) => a.y - b.y).forEach((a) => a.draw());
+
+    if (this.bannerT > 0) {
+      const w = this.map.name.length * 6 + 14;
+      drawPanel(ctx, 4, 4, w, 16);
+      drawText(ctx, this.map.name, 11, 8);
+    }
+
+    this.dialog.draw(ctx);
+
+    if (this.choice) {
+      drawPanel(ctx, 164, 70, 72, 44);
+      drawText(ctx, this.choice.label, 172, 76);
+      drawText(ctx, 'YES', 184, 88);
+      drawText(ctx, 'NO', 184, 100);
+      drawCursor(ctx, 176, 88 + this.choice.cursor * 12);
+    }
+
+    if (this.flashT > 0 && Math.floor(this.flashT / 6) % 2 === 0) {
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0, 0, 240, 160);
+    }
+    if (this.fade) {
+      const a = this.fade.phase === 'out' ? this.fade.t : 1 - this.fade.t;
+      ctx.fillStyle = `rgba(0,0,0,${Math.min(1, a)})`;
+      ctx.fillRect(0, 0, 240, 160);
+    }
+  }
+
+  drawNpc(ctx, n, camX, camY) {
+    const x = (n.px ?? n.x * 16) - camX, y = (n.py ?? n.y * 16) - camY - 1;
+    if (n.sign) {
+      ctx.fillStyle = '#805030';
+      ctx.fillRect(x + 7, y + 8, 2, 7);
+      ctx.fillStyle = '#c09858';
+      ctx.fillRect(x + 2, y + 2, 12, 7);
+      ctx.fillStyle = '#604020';
+      ctx.fillRect(x + 3, y + 4, 10, 1);
+      ctx.fillRect(x + 3, y + 6, 7, 1);
+      return;
+    }
+    if (n.herman) {
+      ctx.fillStyle = '#f8f8f8';
+      ctx.fillRect(x + 2, y + 4, 12, 8);
+      ctx.fillStyle = '#d8d8e0';
+      ctx.fillRect(x + 2, y + 4, 12, 2);
+      ctx.fillStyle = '#202028';
+      ctx.fillRect(x + 4, y + 6, 2, 2);
+      ctx.fillRect(x + 10, y + 6, 2, 2);
+      ctx.fillStyle = '#28e8f8';
+      ctx.fillRect(x + 4, y + 6, 2, 1);
+      ctx.fillRect(x + 10, y + 6, 2, 1);
+      ctx.fillStyle = '#f87830';
+      ctx.fillRect(x + 2, y + 9, 12, 1);
+      ctx.fillStyle = '#303038';
+      ctx.fillRect(x + 3, y + 12, 3, 3);
+      ctx.fillRect(x + 10, y + 12, 3, 3);
+      return;
+    }
+    if (n.mon) {
+      monSprite(MON[n.mon]).draw(ctx, x, y, 16);
+      return;
+    }
+    const frames = charSprite(n.pal);
+    ctx.drawImage(frames[n.facing || n.dir || 'down'][0], x, y);
+  }
+
+  drawPlayer(ctx, camX, camY) {
+    const frames = charSprite(7);
+    const frame = this.moving ? (Math.floor(this.animT / 8) % 2 === 0 ? 1 : 2) : 0;
+    ctx.drawImage(frames[G.dir][frame], this.px - camX, this.py - camY - 1);
+  }
+}
