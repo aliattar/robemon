@@ -77,8 +77,16 @@ export function save() {
   localStorage.setItem(SAVE_KEY, JSON.stringify(data));
 }
 
-export function hasSave() {
-  return !!localStorage.getItem(SAVE_KEY);
+export function fmtPlayTime(ms) {
+  const mins = Math.floor(ms / 60000);
+  return `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
+}
+
+export function saveInfo() {
+  const raw = localStorage.getItem(SAVE_KEY);
+  if (!raw) return null;
+  const data = JSON.parse(raw);
+  return { playTime: data.playTime || 0, seen: data.seen.length, caught: data.caught.length };
 }
 
 export function load() {

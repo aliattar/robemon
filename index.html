@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>ROBÉMON — Catch real robots</title>
 <meta name="theme-color" content="#32323e">
 <link rel="icon" type="image/png" href="assets/favicon.png">
@@ -28,6 +28,7 @@
   body {
     display: flex;
     flex-direction: column;
+    height: 100dvh;
   }
   #game {
     flex: 1;
@@ -50,9 +51,7 @@
     user-select: none;
   }
   body.touch #game {
-    background: #14141c;
-    border-radius: 0 0 24px 24px;
-    box-shadow: inset 0 -3px 0 #0c0c12;
+    background: #000;
   }
   body.touch #controls {
     display: flex;
@@ -60,7 +59,7 @@
     justify-content: space-between;
     height: 36vh;
     min-height: 175px;
-    padding: 0 5vw;
+    padding: 0 5vw env(safe-area-inset-bottom);
     background: linear-gradient(#3a3a47, #2c2c37);
     position: relative;
   }

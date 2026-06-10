@@ -16,7 +16,7 @@ const host = document.getElementById('game');
 
 function fit() {
   const raw = Math.min(host.clientWidth / 240, host.clientHeight / 160);
-  const scale = raw >= 2 ? Math.floor(raw) : raw;
+  const scale = document.body.classList.contains('touch') ? raw : Math.max(1, Math.floor(raw));
   canvas.style.width = `${240 * scale}px`;
   canvas.style.height = `${160 * scale}px`;
 }

@@ -1,7 +1,7 @@
 import { MON } from '../data/dex.js';
 import { TYPE_COLORS } from '../data/types.js';
 import { monSprite, charSprite } from '../sprites.js';
-import { G, makeMon, hasSave, load } from '../state.js';
+import { G, makeMon, saveInfo, load, fmtPlayTime } from '../state.js';
 import { input } from '../input.js';
 import { sfx } from '../audio.js';
 import { scenes } from '../scene.js';
@@ -15,7 +15,8 @@ export class TitleScene {
   constructor() {
     this.t = 0;
     this.cursor = 0;
-    this.options = hasSave() ? ['CONTINUE', 'NEW GAME'] : ['NEW GAME'];
+    this.save = saveInfo();
+    this.options = this.save ? ['CONTINUE', 'NEW GAME'] : ['NEW GAME'];
   }
   update() {
     this.t++;
@@ -57,11 +58,29 @@ export class TitleScene {
     monSprite(MON.go2).draw(ctx, 88, 86 - bounce, 48);
     monSprite(MON.r1).draw(ctx, 140, 90 - bounce * 0.7, 40, true);
 
-    const menuY = 130;
-    this.options.forEach((o, i) => {
-      drawTextShadow(ctx, o, 102, menuY + i * 12, '#f8f8f8', '#283048');
-      if (this.cursor === i && Math.floor(this.t / 20) % 2 === 0) drawCursor(ctx, 93, menuY + i * 12, '#f8d030');
-    });
+    const blink = Math.floor(this.t / 20) % 2 === 0;
+    if (this.save) {
+      drawPanel(ctx, 36, 78, 168, 56);
+      drawText(ctx, 'CONTINUE', 52, 84);
+      const rows = [
+        ['TIME', fmtPlayTime(this.save.playTime)],
+        ['ROBODEX', String(this.save.caught)],
+        ['SEEN', String(this.save.seen)],
+      ];
+      rows.forEach(([label, value], i) => {
+        drawText(ctx, label, 52, 95 + i * 11, '#3068b8');
+        drawText(ctx, value, 128, 95 + i * 11);
+      });
+      drawPanel(ctx, 36, 138, 168, 18);
+      drawText(ctx, 'NEW GAME', 52, 143);
+      if (blink) drawCursor(ctx, 44, this.cursor === 0 ? 84 : 143);
+    } else {
+      const menuY = 130;
+      this.options.forEach((o, i) => {
+        drawTextShadow(ctx, o, 102, menuY + i * 12, '#f8f8f8', '#283048');
+        if (this.cursor === i && blink) drawCursor(ctx, 93, menuY + i * 12, '#f8d030');
+      });
+    }
   }
 }
 

@@ -1,17 +1,12 @@
 import { DEX, MON, REGION_NAMES, fmtPrice, movesAt, voiceMoveFor } from '../data/dex.js';
 import { TYPE_COLORS } from '../data/types.js';
 import { monSprite } from '../sprites.js';
-import { G, save, monMoves } from '../state.js';
+import { G, save, monMoves, fmtPlayTime } from '../state.js';
 import { input } from '../input.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
 import { scenes } from '../scene.js';
 import { drawPanel, drawText, drawHpBar, drawCursor, wrapText } from '../ui.js';
-
-function playTimeLabel() {
-  const mins = Math.floor(G.playTime / 60000);
-  return `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
-}
 
 export class StartMenu {
   constructor() {
@@ -52,7 +47,7 @@ export class StartMenu {
       drawText(ctx, this.label(o), 170, 11 + i * 13);
       if (this.cursor === i) drawCursor(ctx, 161, 11 + i * 13);
     });
-    const stats = [`TIME ${playTimeLabel()}`, `SEEN ${G.seen.size}`, `CAUGHT ${G.caught.size}`];
+    const stats = [`TIME ${fmtPlayTime(G.playTime)}`, `SEEN ${G.seen.size}`, `CAUGHT ${G.caught.size}`];
     drawPanel(ctx, 4, 4, 80, 53);
     stats.forEach((s, i) => drawText(ctx, s, 12, 11 + i * 13));
     if (this.savedT > 0) {
