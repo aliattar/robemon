@@ -6,6 +6,7 @@ import { input } from '../input.js';
 import { sfx } from '../audio.js';
 import { scenes } from '../scene.js';
 import { drawPanel, drawText, drawHpBar, drawCursor, Typewriter } from '../ui.js';
+import { EvolutionScene } from './evolution.js';
 
 const name = (mon) => MON[mon.id].name;
 
@@ -129,20 +130,7 @@ export class BattleScene {
   checkEvolution() {
     const evo = MON[this.ally.id].evo;
     if (!evo || this.ally.level < evo.lv) { this.afterFoeDone(); return; }
-    this.q(
-      { t: 'msg', text: `What? ${name(this.ally)} is evolving!` },
-      { t: 'evolve' },
-      {
-        t: 'fn',
-        fn: () => {
-          this.ally.id = evo.to;
-          recalc(this.ally);
-          G.seen.add(evo.to); G.caught.add(evo.to);
-          sfx.catch();
-          this.q({ t: 'msg', text: `Your robot evolved into ${name(this.ally)}!` }, { t: 'hp', who: 'ally' }, { t: 'fn', fn: () => this.afterFoeDone() });
-        },
-      },
-    );
+    this.q({ t: 'evolution', to: evo.to });
   }
 
   afterFoeDone() {
@@ -336,12 +324,15 @@ export class BattleScene {
         if (step.n === 1) sfx.faint();
         this.anim[step.who + 'Drop'] = step.n * 3;
         return step.n >= 24;
-      case 'evolve':
-        step.n = (step.n || 0) + 1;
-        this.anim.allyFlash = Math.floor(step.n / 5) % 2 === 1;
-        if (step.n % 10 === 0) sfx.shake();
-        if (step.n >= 60) { this.anim.allyFlash = false; return true; }
-        return false;
+      case 'evolution':
+        if (!step.started) {
+          step.started = true;
+          scenes.push(new EvolutionScene(this.ally, step.to, () => {
+            step.done = true;
+            this.q({ t: 'hp', who: 'ally' }, { t: 'fn', fn: () => this.afterFoeDone() });
+          }));
+        }
+        return !!step.done;
       case 'ball':
         return this.runBallStep(step);
       case 'end':
