@@ -5,6 +5,12 @@ export function initTouch() {
   if (!forced && !(matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window)) return false;
   document.body.classList.add('touch');
 
+  let lastTap = 0;
+  window.addEventListener('touchend', (e) => {
+    if (e.touches.length === 0 && e.timeStamp - lastTap < 350) e.preventDefault();
+    lastTap = e.timeStamp;
+  }, { passive: false });
+
   const bind = (id, btn) => {
     const el = document.getElementById(id);
     el.addEventListener('pointerdown', (e) => {
