@@ -1,4 +1,5 @@
 import { MAPS, LEGENDARY_ORDER, LEGENDARY_LEVEL, DREAM_POOL, DREAM_LEVEL } from '../data/maps.js';
+import { dailyInfluencer } from '../data/influencers.js';
 import { MON } from '../data/dex.js';
 import { tileset, SOLID_TILES, charSprite, monSprite } from '../sprites.js';
 import { G, makeMon, healParty, markSeen, addMon, recalc, rollDay } from '../state.js';
@@ -51,6 +52,10 @@ export class OverworldScene {
       n.walking = false;
       n.cool = 30 + Math.floor(Math.random() * 120);
     }
+    const { inf, spot } = dailyInfluencer(G.flags.day);
+    this.dailyNpc = spot.map === this.mapKey
+      ? { x: spot.x, y: spot.y, name: inf.name, pal: inf.pal, dir: 'down', lines: inf.lines, clout: { flag: 'inflClout', done: inf.done, lead: true, boost: inf.boost } }
+      : null;
     music.play(this.map.music || 'city-start');
   }
 
@@ -59,11 +64,13 @@ export class OverworldScene {
   }
 
   npcs() {
-    return (this.map.npcs || []).filter((n) => {
+    const list = (this.map.npcs || []).filter((n) => {
       if (n.hideIf && G.flags[n.hideIf]) return false;
       if (n.dream && !this.dreamLegend()) return false;
       return true;
     });
+    if (this.dailyNpc) list.push(this.dailyNpc);
+    return list;
   }
 
   dreamPick() {
@@ -281,10 +288,11 @@ export class OverworldScene {
     if (npc.clout) {
       const used = G.flags[npc.clout.flag] || 0;
       if (used >= 3) { this.dialog.start([npc.clout.done]); return; }
-      const target = G.party.find((m) => m.id === G.starter) || G.party[0];
-      this.dialog.start(npc.lines, () => {
+      const target = npc.clout.lead ? G.party[0] : G.party.find((m) => m.id === G.starter) || G.party[0];
+      const fill = (l) => l.replaceAll('{LEAD}', MON[target.id].name).replaceAll('{ATK}', target.atk).replaceAll('{DEF}', target.def).replaceAll('{SPD}', target.spd);
+      this.dialog.start(npc.lines.map(fill), () => {
         G.flags[npc.clout.flag] = used + 1;
-        target.level++;
+        target.level += npc.clout.boost || 1;
         recalc(target);
         sfx.levelUp();
         this.dialog.start([`The clout is real! ${MON[target.id].name} grew to level ${target.level}!`]);

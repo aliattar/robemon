@@ -1,5 +1,6 @@
 import { DEX, MON, VOICE_BY_ID } from './src/data/dex.js';
 import { MAPS, LEGENDARY_ORDER } from './src/data/maps.js';
+import { SPAWN_SPOTS, INFLUENCERS, NAOMI } from './src/data/influencers.js';
 
 let errors = 0;
 const err = (msg) => { errors++; console.log('ERR:', msg); };
@@ -39,6 +40,18 @@ for (const [key, map] of Object.entries(MAPS)) {
   for (const [id] of map.encounters?.table || []) {
     if (!MON[id]) err(`${key} encounter unknown ${id}`);
   }
+}
+
+for (const sp of SPAWN_SPOTS) {
+  const map = MAPS[sp.map];
+  if (!map) { err(`spawn spot unknown map ${sp.map}`); continue; }
+  const t = map.rows[sp.y]?.[sp.x];
+  if (!WALKABLE.has(t) || t === 'D') err(`spawn spot ${sp.map} ${sp.x},${sp.y} on '${t}'`);
+  if ((map.npcs || []).some((n) => n.x === sp.x && n.y === sp.y)) err(`spawn spot ${sp.map} ${sp.x},${sp.y} collides with npc`);
+  if ((map.warps || []).some((w) => w.x === sp.x && w.y === sp.y)) err(`spawn spot ${sp.map} ${sp.x},${sp.y} on warp`);
+}
+for (const inf of [...INFLUENCERS, NAOMI]) {
+  if (!inf.lines?.length || !inf.done || inf.pal === undefined) err(`influencer ${inf.id} incomplete`);
 }
 
 console.log(errors ? `${errors} errors` : 'data OK');

@@ -199,6 +199,17 @@ const PALETTES = [
   { hair: '#783818', skin: '#d8a878', shirt: '#90b048', pants: '#604830' }, // 5 hiker/worker
   { hair: '#185878', skin: '#f0c8a0', shirt: '#e85840', pants: '#283848' }, // 6 trainer
   { hair: '#d83028', skin: '#f0c8a0', shirt: '#e83020', pants: '#283050' }, // 7 player (red cap)
+  { hair: '#e8c060', skin: '#f0c8a0', shirt: '#28b8a8', pants: '#284058' }, // 8 lukas
+  { hair: '#181820', skin: '#d8a878', shirt: '#f0f0f0', pants: '#202830' }, // 9 devang
+  { hair: '#282028', skin: '#d8a878', shirt: '#f08020', pants: '#383040' }, // 10 ritwik
+  { hair: '#181820', skin: '#f0c8a0', shirt: '#203060', pants: '#404858' }, // 11 jim fan
+  { hair: '#a8a8b0', skin: '#f0c8a0', shirt: '#705838', pants: '#303840' }, // 12 scott
+  { hair: '#181820', skin: '#d8a878', shirt: '#202028', pants: '#181820' }, // 13 ashok
+  { hair: '#181820', skin: '#f0d0b0', shirt: '#28e8f8', pants: '#202028' }, // 14 naomi
+  { hair: '#705030', skin: '#f0c8a0', shirt: '#687840', pants: '#3a3a30' }, // 15 paxton
+  { hair: '#b89868', skin: '#f0c8a0', shirt: '#7848b0', pants: '#283048' }, // 16 julian
+  { hair: '#c86830', skin: '#f0c8a0', shirt: '#788090', pants: '#404048' }, // 17 scotty
+  { hair: '#583820', skin: '#f0c8a0', shirt: '#f0c020', pants: '#b03830' }, // 18 simone
 ];
 
 function drawChar(g, pal, dir, frame) {

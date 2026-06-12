@@ -60,6 +60,7 @@ export function rollDay() {
   if (G.flags.day === today()) return;
   G.flags.day = today();
   delete G.flags.dreamTried;
+  delete G.flags.inflClout;
 }
 
 export function addMon(mon) {
