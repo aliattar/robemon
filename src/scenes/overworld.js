@@ -1,7 +1,7 @@
-import { MAPS, LEGENDARY_ORDER, LEGENDARY_LEVEL } from '../data/maps.js';
+import { MAPS, LEGENDARY_ORDER, LEGENDARY_LEVEL, DREAM_POOL, DREAM_LEVEL } from '../data/maps.js';
 import { MON } from '../data/dex.js';
 import { tileset, SOLID_TILES, charSprite, monSprite } from '../sprites.js';
-import { G, makeMon, healParty, markSeen, addMon, recalc } from '../state.js';
+import { G, makeMon, healParty, markSeen, addMon, recalc, rollDay } from '../state.js';
 import { input } from '../input.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
@@ -34,6 +34,7 @@ export class OverworldScene {
   }
 
   loadMap() {
+    rollDay();
     this.mapKey = G.map;
     this.map = MAPS[G.map];
     this.tiles = tileset(this.map.theme);
@@ -58,7 +59,23 @@ export class OverworldScene {
   }
 
   npcs() {
-    return (this.map.npcs || []).filter((n) => !(n.hideIf && G.flags[n.hideIf]));
+    return (this.map.npcs || []).filter((n) => {
+      if (n.hideIf && G.flags[n.hideIf]) return false;
+      if (n.dream && !this.dreamLegend()) return false;
+      return true;
+    });
+  }
+
+  dreamPick() {
+    const pool = DREAM_POOL.filter((id) => !G.caught.has(id));
+    if (!pool.length) return null;
+    let h = 0;
+    for (const c of G.flags.day || '') h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return pool[h % pool.length];
+  }
+
+  dreamLegend() {
+    return G.flags.dreamTried ? null : this.dreamPick();
   }
 
   npcAt(x, y) {
@@ -275,11 +292,23 @@ export class OverworldScene {
       return;
     }
     if (npc.quiz) { this.startQuiz(npc); return; }
-    if (npc.astro) {
-      this.dialog.start(npc.lines, () => {
-        G.flags[npc.astro.flag] = true;
-        this.startBattle(makeMon(npc.mon, npc.astro.level), npc.mon);
-      });
+    if (npc.dream) {
+      const id = this.dreamLegend();
+      this.dialog.start(
+        ['...!', `${MON[id].name} drifts at the edge of the dream. Today, it is real.`],
+        () => {
+          G.flags.dreamTried = true;
+          this.startBattle(makeMon(id, DREAM_LEVEL), id);
+        },
+      );
+      return;
+    }
+    if (npc.dreamer) {
+      const id = this.dreamPick();
+      const hint = G.flags.dreamTried
+        ? 'The dream has faded for today. Come back tomorrow... someone else will be dreaming.'
+        : id ? `Tonight, ${MON[id].name} is dreaming here. Wake it gently.` : 'Every legend has been caught. The dreams are yours now.';
+      this.dialog.start([...npc.lines, hint]);
       return;
     }
     if (npc.heal) {
@@ -319,19 +348,16 @@ export class OverworldScene {
   }
 
   useProjector() {
-    G.flags.legends = G.flags.legends || {};
-    const next = LEGENDARY_ORDER.find((id) => !G.flags.legends[id]);
-    if (!next) {
-      this.dialog.start(['The projector plays the credits. You have met every legend of the silver screen.']);
+    const pool = LEGENDARY_ORDER.filter((id) => !G.caught.has(id));
+    if (!pool.length) {
+      this.dialog.start(['The projector plays the credits. You have caught every legend of the silver screen.']);
       return;
     }
-    const mon = MON[next];
+    const id = pool[(G.flags.projIdx || 0) % pool.length];
+    G.flags.projIdx = ((G.flags.projIdx || 0) % pool.length) + 1;
     this.dialog.start(
-      [`The projector whirs to life...`, `${mon.name} steps out of the screen!`],
-      () => {
-        G.flags.legends[next] = true;
-        this.startBattle(makeMon(next, LEGENDARY_LEVEL), next);
-      },
+      [`The projector whirs to life...`, `${MON[id].name} steps out of the screen!`],
+      () => this.startBattle(makeMon(id, LEGENDARY_LEVEL), id),
     );
   }
 
@@ -450,6 +476,16 @@ export class OverworldScene {
       ctx.fillStyle = '#303038';
       ctx.fillRect(x + 3, y + 12, 3, 3);
       ctx.fillRect(x + 10, y + 12, 3, 3);
+      return;
+    }
+    if (n.dream) {
+      const id = this.dreamLegend();
+      if (!id) return;
+      const float = Math.round(Math.sin(this.animT / 18) * 2);
+      ctx.save();
+      ctx.globalAlpha = 0.78 + Math.sin(this.animT / 11) * 0.22;
+      monSprite(MON[id]).draw(ctx, x, y - 3 + float, 16);
+      ctx.restore();
       return;
     }
     if (n.mon) {

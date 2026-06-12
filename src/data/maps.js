@@ -330,12 +330,8 @@ export const MAPS = {
     ],
     warps: [{ x: 7, y: 13, to: 'route-101', tx: 27, ty: 1 }],
     npcs: [
-      {
-        x: 7, y: 5, name: 'ASTRO BOY', mon: 'astro-boy', hideIf: 'astroMet',
-        astro: { level: 50, flag: 'astroMet' },
-        lines: ['...!', 'ASTRO BOY hovers above the grass. The robot that started it all... is real.'],
-      },
-      { x: 11, y: 9, name: 'DREAMER', pal: 3, dir: 'left', lines: ['You found this place... so robots really do dream.', 'Do not tell the algorithm about us.'] },
+      { x: 7, y: 5, name: 'LEGEND', dream: true },
+      { x: 11, y: 9, name: 'DREAMER', pal: 3, dir: 'left', dreamer: true, lines: ['You found this place... so robots really do dream.', 'Do not tell the algorithm about us.'] },
     ],
   },
 
@@ -602,3 +598,6 @@ export const LEGENDARY_ORDER = [
 ];
 
 export const LEGENDARY_LEVEL = 40;
+
+export const DREAM_POOL = [...LEGENDARY_ORDER, 'astro-boy'];
+export const DREAM_LEVEL = 50;

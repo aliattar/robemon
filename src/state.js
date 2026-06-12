@@ -51,6 +51,17 @@ export function monMoves(mon) {
 
 export function markSeen(id) { G.seen.add(id); }
 
+export function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+}
+
+export function rollDay() {
+  if (G.flags.day === today()) return;
+  G.flags.day = today();
+  delete G.flags.dreamTried;
+}
+
 export function addMon(mon) {
   G.seen.add(mon.id);
   G.caught.add(mon.id);
@@ -92,5 +103,6 @@ export function saveInfo() {
 export function load() {
   const data = JSON.parse(localStorage.getItem(SAVE_KEY));
   Object.assign(G, data, { seen: new Set(data.seen), caught: new Set(data.caught) });
+  rollDay();
   return true;
 }
